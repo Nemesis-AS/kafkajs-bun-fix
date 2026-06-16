@@ -304,12 +304,18 @@ module.exports = class RequestQueue extends EventEmitter {
    * the pending request queue eventually.
    */
   scheduleCheckPendingRequests() {
+    const now = Date.now()
+
+    if (this.pending.length === 0 && this.throttledUntil <= now) {
+      return
+    }
+
     // If we're throttled: Schedule checkPendingRequests when the throttle
     // should be resolved. If there is already something scheduled we assume that that
     // will be fine, and potentially fix up a new timeout if needed at that time.
     // Note that if we're merely "overloaded" by having too many inflight requests
     // we will anyways check the queue when one of them gets fulfilled.
-    let scheduleAt = this.throttledUntil - Date.now()
+    let scheduleAt = this.throttledUntil - now
     if (!this.throttleCheckTimeoutId) {
       if (this.pending.length > 0) {
         scheduleAt = scheduleAt > 0 ? scheduleAt : CHECK_PENDING_REQUESTS_INTERVAL
